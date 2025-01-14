@@ -1,0 +1,62 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: task-management-vs
+  namespace: task-management
+  labels:
+    app: task-management
+    component: virtual-service
+    version: v1
+    managed-by: istio
+spec:
+  hosts:
+    - task-management.example.com
+  gateways:
+    - task-management-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /api/v1
+          headers:
+            x-api-version:
+              exact: v1
+      route:
+        - destination:
+            host: api-gateway
+            port:
+              number: 3000
+            subset: v1
+          weight: 100
+          headers:
+            request:
+              set:
+                x-request-id: "%REQ(x-request-id)%"
+      timeout: 30s
+      retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: connect-failure,refused-stream,unavailable,cancelled,resource-exhausted,5xx
+      corsPolicy:
+        allowOrigins:
+          - exact: https://task-management.example.com
+          - exact: https://staging.task-management.example.com
+        allowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - PATCH
+          - OPTIONS
+        allowHeaders:
+          - Authorization
+          - Content-Type
+          - x-request-id
+          - x-api-version
+        exposeHeaders:
+          - x-request-id
+        maxAge: 24h
+      fault:
+        delay:
+          percentage:
+            value: 0.1
+          fixedDelay: 5s

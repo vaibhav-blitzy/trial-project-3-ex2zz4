@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    
+    <!-- Theme color for browser chrome -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+    
+    <!-- Primary Meta Tags -->
+    <meta name="description" content="Task Management System - Enterprise-grade solution for streamlined task organization and enhanced team collaboration">
+    
+    <!-- iOS Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <!-- Preconnect to external resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://api.example.com">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" as="style">
+    <link rel="preload" href="./src/index.tsx" as="script" importance="high">
+    
+    <!-- External resources -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    
+    <!-- Internal resources -->
+    <link rel="stylesheet" href="./src/styles/global.css">
+    
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.example.com ws:; script-src 'self' 'wasm-unsafe-eval'; object-src 'none'">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
+    
+    <title>Task Management System</title>
+</head>
+<body>
+    <!-- React mount point with accessibility role -->
+    <div id="root" role="application" aria-label="Task Management Application"></div>
+    
+    <!-- Portal container for modals and overlays -->
+    <div id="portal" role="presentation" aria-hidden="true"></div>
+    
+    <!-- Error boundary fallback -->
+    <noscript>
+        <div role="alert" style="padding: 20px; margin: 20px; background-color: #ffebee; color: #c62828; border-radius: 4px;">
+            JavaScript must be enabled to run this application.
+        </div>
+    </noscript>
+    
+    <!-- Entry point script -->
+    <script type="module" src="./src/index.tsx"></script>
+    
+    <!-- Performance monitoring script -->
+    <script>
+        // Initialize performance monitoring
+        if (process.env.NODE_ENV === 'production') {
+            window.performance.mark('app-init');
+        }
+    </script>
+</body>
+</html>

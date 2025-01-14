@@ -1,0 +1,88 @@
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: restricted-pods
+  namespace: task-management
+  labels:
+    app: task-management
+    component: security-policy
+    tier: security
+  annotations:
+    kubernetes.io/description: "Default restricted policy for application pods implementing zero-trust principles"
+    seccomp.security.alpha.kubernetes.io/defaultProfileName: "runtime/default"
+    apparmor.security.beta.kubernetes.io/defaultProfileName: "runtime/default"
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - configMap
+    - emptyDir
+    - projected
+    - secret
+    - downwardAPI
+    - persistentVolumeClaim
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: MustRunAsNonRoot
+    ranges:
+      - min: 1000
+        max: 65535
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: MustRunAs
+    ranges:
+      - min: 1000
+        max: 65535
+  fsGroup:
+    rule: MustRunAs
+    ranges:
+      - min: 1000
+        max: 65535
+  readOnlyRootFilesystem: true
+  seccompProfile:
+    type: RuntimeDefault
+  forbiddenSysctls:
+    - '*'
+  allowedCapabilities: []
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: privileged-pods
+  namespace: task-management
+  labels:
+    app: task-management
+    component: security-policy
+    tier: security
+  annotations:
+    kubernetes.io/description: "Privileged policy for system components with controlled elevated permissions"
+    seccomp.security.alpha.kubernetes.io/defaultProfileName: "unconfined"
+spec:
+  privileged: true
+  allowPrivilegeEscalation: true
+  volumes:
+    - '*'
+  hostNetwork: true
+  hostIPC: true
+  hostPID: true
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  fsGroup:
+    rule: RunAsAny
+  readOnlyRootFilesystem: false
+  seccompProfile:
+    type: Unconfined
+  allowedCapabilities:
+    - '*'
+  hostPorts:
+    - min: 0
+      max: 65535

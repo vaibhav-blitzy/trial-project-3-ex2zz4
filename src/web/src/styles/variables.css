@@ -1,0 +1,165 @@
+/* ==========================================================================
+   Task Management System - Global CSS Variables
+   Following Material Design 3.0 principles
+   Version: 1.0.0
+   ========================================================================== */
+
+/* Base Typography
+   ========================================================================== */
+:root {
+  /* Font Family */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Font Sizes - Using a modular scale with 1.25 ratio */
+  --font-size-base: 16px;
+  --font-size-scale-ratio: 1.25;
+  --font-size-xs: calc(var(--font-size-base) / var(--font-size-scale-ratio));
+  --font-size-sm: var(--font-size-base);
+  --font-size-md: calc(var(--font-size-base) * var(--font-size-scale-ratio));
+  --font-size-lg: calc(var(--font-size-md) * var(--font-size-scale-ratio));
+  --font-size-xl: calc(var(--font-size-lg) * var(--font-size-scale-ratio));
+
+  /* Font Weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* Line Heights */
+  --line-height-tight: 1.2;
+  --line-height-base: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* Spacing - 8px Grid System */
+  --spacing-base: 8px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+
+  /* Border Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 16px;
+  --border-radius-full: 9999px;
+
+  /* Transitions */
+  --transition-duration: 150ms;
+  --transition-duration-fast: 100ms;
+  --transition-duration-slow: 300ms;
+  --transition-timing: ease-in-out;
+  --transition-timing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* Breakpoints */
+  --breakpoint-xs: 320px;
+  --breakpoint-sm: 768px;
+  --breakpoint-md: 1024px;
+  --breakpoint-lg: 1440px;
+  --breakpoint-xl: 1920px;
+
+  /* Z-Index Scale */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+  --z-index-toast: 1080;
+}
+
+/* Light Theme
+   ========================================================================== */
+:root[data-theme='light'] {
+  /* Primary Colors */
+  --color-primary-50: #e3f2fd;
+  --color-primary-100: #bbdefb;
+  --color-primary-200: #90caf9;
+  --color-primary-300: #64b5f6;
+  --color-primary-400: #42a5f5;
+  --color-primary-500: #1976d2;
+  --color-primary-600: #1565c0;
+  --color-primary-700: #0d47a1;
+
+  /* Secondary Colors */
+  --color-secondary-500: #9c27b0;
+  --color-secondary-600: #7b1fa2;
+
+  /* Semantic Colors */
+  --color-error-500: #d32f2f;
+  --color-warning-500: #ed6c02;
+  --color-info-500: #0288d1;
+  --color-success-500: #2e7d32;
+
+  /* Background Colors */
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f5f5f5;
+  --color-background-tertiary: #e0e0e0;
+
+  /* Surface Colors */
+  --color-surface-primary: #ffffff;
+  --color-surface-secondary: #f5f5f5;
+
+  /* Text Colors - WCAG 2.1 AA compliant */
+  --color-text-primary: rgba(0, 0, 0, 0.87);
+  --color-text-secondary: rgba(0, 0, 0, 0.6);
+  --color-text-disabled: rgba(0, 0, 0, 0.38);
+
+  /* Border Colors */
+  --color-border-primary: rgba(0, 0, 0, 0.12);
+  --color-border-secondary: rgba(0, 0, 0, 0.08);
+
+  /* Elevation Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.08);
+}
+
+/* Dark Theme
+   ========================================================================== */
+:root[data-theme='dark'] {
+  /* Primary Colors */
+  --color-primary-50: #e3f2fd;
+  --color-primary-100: #bbdefb;
+  --color-primary-200: #90caf9;
+  --color-primary-300: #64b5f6;
+  --color-primary-400: #42a5f5;
+  --color-primary-500: #1976d2;
+  --color-primary-600: #1565c0;
+  --color-primary-700: #0d47a1;
+
+  /* Secondary Colors */
+  --color-secondary-500: #ce93d8;
+  --color-secondary-600: #ab47bc;
+
+  /* Semantic Colors */
+  --color-error-500: #f44336;
+  --color-warning-500: #ffa726;
+  --color-info-500: #29b6f6;
+  --color-success-500: #66bb6a;
+
+  /* Background Colors */
+  --color-background-primary: #121212;
+  --color-background-secondary: #1e1e1e;
+  --color-background-tertiary: #2c2c2c;
+
+  /* Surface Colors */
+  --color-surface-primary: #1e1e1e;
+  --color-surface-secondary: #2c2c2c;
+
+  /* Text Colors - WCAG 2.1 AA compliant */
+  --color-text-primary: rgba(255, 255, 255, 0.87);
+  --color-text-secondary: rgba(255, 255, 255, 0.6);
+  --color-text-disabled: rgba(255, 255, 255, 0.38);
+
+  /* Border Colors */
+  --color-border-primary: rgba(255, 255, 255, 0.12);
+  --color-border-secondary: rgba(255, 255, 255, 0.08);
+
+  /* Elevation Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.24);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.2);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.16);
+}

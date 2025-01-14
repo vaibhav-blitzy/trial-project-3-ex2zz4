@@ -1,0 +1,58 @@
+# Velero Backup Storage Locations Configuration
+# Version: velero v2.32.0
+# AWS SDK Version: 2.x
+
+---
+# Primary Region Backup Storage Location (us-east-1)
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: primary-backup-location
+  namespace: velero
+  annotations:
+    backup.velero.io/storage-class: standard
+    backup.velero.io/retention-period: "720h"  # 30 days retention
+spec:
+  provider: aws
+  objectStorage:
+    bucket: task-mgmt-backups-primary
+    prefix: backups/primary
+    encryption:
+      serverSideEncryption: aws:kms
+  config:
+    region: us-east-1
+    s3ForcePathStyle: "true"
+    s3Url: s3.amazonaws.com
+    enableTransferAcceleration: "true"
+    kmsKeyId: arn:aws:kms:us-east-1:account:key/primary-key
+  default: true  # Set as default backup location
+  accessMode: ReadWrite
+  backupSyncPeriod: 30m  # Sync backups every 30 minutes
+  validationFrequency: 1h  # Validate backups every hour
+
+---
+# Disaster Recovery Region Backup Storage Location (us-west-2)
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: dr-backup-location
+  namespace: velero
+  annotations:
+    backup.velero.io/storage-class: standard
+    backup.velero.io/retention-period: "720h"  # 30 days retention
+spec:
+  provider: aws
+  objectStorage:
+    bucket: task-mgmt-backups-dr
+    prefix: backups/dr
+    encryption:
+      serverSideEncryption: aws:kms
+  config:
+    region: us-west-2
+    s3ForcePathStyle: "true"
+    s3Url: s3.amazonaws.com
+    enableTransferAcceleration: "true"
+    kmsKeyId: arn:aws:kms:us-west-2:account:key/dr-key
+  accessMode: ReadWrite
+  backupSyncPeriod: 30m  # Sync backups every 30 minutes
+  validationFrequency: 1h  # Validate backups every hour

@@ -1,0 +1,198 @@
+/* ==========================================================================
+   Task Management System - Animation Styles
+   Following Material Design 3.0 motion principles
+   Version: 1.0.0
+   ========================================================================== */
+
+@import './variables.css';
+
+/* Keyframe Animations
+   ========================================================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+    will-change: background-position;
+  }
+  100% {
+    background-position: 200% 0;
+    will-change: auto;
+  }
+}
+
+@keyframes elevate {
+  from {
+    transform: translateY(0);
+    box-shadow: var(--shadow-1);
+  }
+  to {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-2);
+  }
+}
+
+/* Motion-Safe Animations
+   Apply only when user hasn't requested reduced motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+  .fade-in {
+    animation: fadeIn var(--transition-duration) var(--easing-standard);
+    will-change: opacity;
+  }
+
+  .slide-in {
+    animation: slideIn var(--transition-duration) var(--easing-decelerate);
+    will-change: transform, opacity;
+  }
+
+  .rotate {
+    animation: rotate 1s linear infinite;
+    will-change: transform;
+  }
+
+  .pulse {
+    animation: pulse 2s var(--easing-standard) infinite;
+    will-change: transform;
+  }
+}
+
+/* Reduced Motion
+   Respect user's motion preferences for accessibility
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation: none;
+    opacity: 1;
+  }
+
+  .slide-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .rotate {
+    animation: none;
+  }
+
+  .pulse {
+    animation: none;
+  }
+}
+
+/* Loading States
+   ========================================================================== */
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 0%,
+    var(--color-background) 50%,
+    var(--color-surface) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  will-change: background-position;
+}
+
+/* GPU-Accelerated Transitions
+   ========================================================================== */
+
+.transition-gpu {
+  transition: transform var(--transition-duration) var(--easing-standard);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Interactive Hover Effects
+   ========================================================================== */
+
+.hover-scale {
+  transition: transform var(--transition-duration) var(--easing-standard);
+  will-change: transform;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.hover-elevate {
+  transition: transform var(--transition-duration) var(--easing-standard),
+              box-shadow var(--transition-duration) var(--easing-standard);
+  will-change: transform, box-shadow;
+}
+
+.hover-elevate:hover {
+  animation: elevate var(--transition-duration) var(--easing-standard) forwards;
+}
+
+/* State Transitions
+   ========================================================================== */
+
+.state-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.state-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--transition-duration) var(--easing-standard),
+              transform var(--transition-duration) var(--easing-decelerate);
+}
+
+.state-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.state-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity var(--transition-duration) var(--easing-standard),
+              transform var(--transition-duration) var(--easing-accelerate);
+}

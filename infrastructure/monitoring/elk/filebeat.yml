@@ -1,0 +1,145 @@
+# Filebeat v7.17.0 Configuration
+# Purpose: Enterprise-grade log collection and shipping configuration for ELK stack
+# Integrates with Kubernetes and provides secure, scalable log management
+
+#========================== Filebeat Global Settings ===========================
+name: ${BEAT_NAME}
+tags: ["task-management", "${ENV:production}", "kubernetes"]
+fields:
+  env: ${ENV:production}
+  app: task-management
+  cluster: ${CLUSTER_NAME}
+  region: ${AWS_REGION}
+fields_under_root: true
+shutdown_timeout: 5s
+max_procs: ${NUMBER_OF_CPUS}
+
+#=========================== Filebeat inputs ================================
+filebeat.inputs:
+- type: container
+  enabled: true
+  paths:
+    - /var/log/containers/*.log
+    - /var/log/pods/*/*.log
+    - /var/log/audit/k8s-audit.log
+    - /var/log/system.log
+  
+  processors:
+    - add_kubernetes_metadata:
+        host: ${NODE_NAME}
+        in_cluster: true
+        default_indexers.enabled: true
+        default_matchers.enabled: true
+        kube_config: /etc/filebeat/kube-config
+    
+    - decode_json_fields:
+        fields: ["message"]
+        target: ""
+        overwrite_keys: true
+        add_error_key: true
+        max_depth: 5
+    
+    - add_cloud_metadata:
+        providers: ["aws"]
+
+  exclude_files: ['.gz$', '.tmp$']
+  ignore_older: 24h
+  scan_frequency: 10s
+  clean_removed: true
+  close_removed: true
+  harvester_limit: 100
+  symlinks: true
+  json.message_key: log
+  json.keys_under_root: true
+  json.overwrite_keys: true
+  json.add_error_key: true
+
+#========================== Filebeat output ================================
+output.logstash:
+  enabled: true
+  hosts: ["${LOGSTASH_HOST:logstash}:5044"]
+  loadbalance: true
+  
+  # SSL/TLS Configuration
+  ssl:
+    enabled: true
+    certificate_authorities: ["/etc/filebeat/certs/ca.crt"]
+    certificate: "/etc/filebeat/certs/filebeat.crt"
+    key: "/etc/filebeat/certs/filebeat.key"
+    key_passphrase: ${KEY_PASSPHRASE}
+    verification_mode: full
+    supported_protocols: ["TLSv1.2", "TLSv1.3"]
+    cipher_suites: ["ECDHE-ECDSA-AES-256-GCM-SHA384"]
+    curve_types: ["P-256", "P-384"]
+    renegotiation: false
+
+  # Performance Tuning
+  worker: 4
+  compression_level: 3
+  bulk_max_size: 2048
+  backoff.init: 1s
+  backoff.max: 60s
+  timeout: 30s
+  pipelining: 2
+  proxy_url: ${PROXY_URL}
+  escape_html: false
+
+#============================= Monitoring =================================
+monitoring:
+  enabled: true
+  elasticsearch:
+    hosts: ["${ELASTICSEARCH_HOST:elasticsearch}:9200"]
+    username: ${ELASTICSEARCH_USER}
+    password: ${ELASTICSEARCH_PASSWORD}
+    api_key: ${ELASTICSEARCH_API_KEY}
+    
+    ssl:
+      enabled: true
+      certificate_authorities: ["/etc/filebeat/certs/ca.crt"]
+      verification_mode: full
+      supported_protocols: ["TLSv1.2", "TLSv1.3"]
+    
+    metrics.period: 30s
+    state.period: 60s
+    cluster_uuid: ${CLUSTER_UUID}
+
+#============================== Logging ===================================
+logging:
+  level: ${LOG_LEVEL:info}
+  to_files: true
+  to_syslog: false
+  
+  files:
+    path: /var/log/filebeat
+    name: filebeat.log
+    keepfiles: 7
+    permissions: "0644"
+    rotateeverybytes: 10MB
+    interval: 24h
+    rotateonstartup: true
+    redirect_stderr: true
+    syslog_facility: local0
+  
+  metrics:
+    enabled: true
+    period: 30s
+  
+  selectors: ["*"]
+
+#============================== Setup ====================================
+setup.template.settings:
+  index.number_of_shards: 3
+  index.number_of_replicas: 1
+  index.codec: best_compression
+
+setup.ilm:
+  enabled: true
+  rollover_alias: "filebeat"
+  pattern: "{now/d}-000001"
+  policy_name: "filebeat"
+
+#========================= Queue Settings ================================
+queue.mem:
+  events: 4096
+  flush.min_events: 512
+  flush.timeout: 5s

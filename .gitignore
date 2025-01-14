@@ -1,0 +1,91 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.pnpm-store/
+.npm/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+.next/
+out/
+coverage/
+.webpack/
+*.js.map
+*.d.ts
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+**/*.pem
+**/*.key
+**/private-key*
+**/jwt-secret*
+**/credentials.json
+**/secrets.yaml
+
+# Kubernetes and Infrastructure
+**/kubeconfig
+**/kube.config
+**/istio-config/
+**/prometheus-data/
+**/grafana-data/
+**/elasticsearch-data/
+**/redis-data/
+**/postgres-data/
+**/k8s/secrets/
+**/terraform.tfstate*
+**/.terraform/
+
+# IDE and Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+.settings/
+.project
+.classpath
+*.iml
+.history/
+
+# Testing and coverage
+coverage/
+.nyc_output/
+junit.xml
+test-results/
+cypress/videos/
+cypress/screenshots/
+**/__snapshots__/
+*.spec.js.snap
+
+# Monitoring and Logs
+logs/
+*.log
+**/monitoring/data/
+**/apm-data/
+**/trace-data/
+**/metrics-data/
+newrelic_agent.log
+
+# OS and Temporary
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+tmp/
+temp/
+*.pid
+*.seed
+desktop.ini
+ehthumbs.db

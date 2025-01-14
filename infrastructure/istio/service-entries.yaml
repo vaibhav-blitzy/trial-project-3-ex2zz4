@@ -1,0 +1,99 @@
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: external-services
+  namespace: task-management
+  labels:
+    app: task-management
+    component: service-entry
+    version: v1
+    managed-by: istio
+spec:
+  # Email Service Entry Configuration
+  - hosts:
+    - smtp.example.com
+    ports:
+    - number: 587
+      name: smtp-tls
+      protocol: TCP
+    location: MESH_EXTERNAL
+    resolution: DNS
+    endpoints:
+    - address: smtp.example.com
+      labels:
+        service: email
+        version: v1
+    exportTo:
+    - "."
+    trafficPolicy:
+      tls:
+        mode: MUTUAL
+        minProtocolVersion: TLSV1_3
+        cipherSuites:
+        - TLS_AES_256_GCM_SHA384
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: storage-service-entry
+  namespace: task-management
+  labels:
+    app: task-management
+    component: service-entry
+    version: v1
+    managed-by: istio
+spec:
+  hosts:
+  - s3.amazonaws.com
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS
+  endpoints:
+  - address: s3.amazonaws.com
+    labels:
+      service: storage
+      version: v1
+  exportTo:
+  - "."
+  trafficPolicy:
+    tls:
+      mode: SIMPLE
+      minProtocolVersion: TLSV1_3
+      cipherSuites:
+      - TLS_AES_256_GCM_SHA384
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: analytics-service-entry
+  namespace: task-management
+  labels:
+    app: task-management
+    component: service-entry
+    version: v1
+    managed-by: istio
+spec:
+  hosts:
+  - analytics.example.com
+  ports:
+  - number: 443
+    name: https
+    protocol: HTTPS
+  location: MESH_EXTERNAL
+  resolution: DNS
+  endpoints:
+  - address: analytics.example.com
+    labels:
+      service: analytics
+      version: v1
+  exportTo:
+  - "."
+  trafficPolicy:
+    tls:
+      mode: SIMPLE
+      minProtocolVersion: TLSV1_3
+      cipherSuites:
+      - TLS_AES_256_GCM_SHA384

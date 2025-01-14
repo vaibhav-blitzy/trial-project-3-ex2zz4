@@ -1,0 +1,153 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: task-management-system-config
+  namespace: default
+  labels:
+    app: task-management-system
+    environment: ${NODE_ENV}
+data:
+  # API Gateway Configuration
+  API_GATEWAY_CONFIG: |
+    {
+      "cors": {
+        "allowed_origins": [
+          "https://*.taskmaster.com",
+          "https://admin.taskmaster.com",
+          "https://api.taskmaster.com"
+        ],
+        "allowed_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        "allowed_headers": [
+          "Content-Type",
+          "Authorization",
+          "X-Request-ID",
+          "X-API-Key",
+          "X-Total-Count"
+        ],
+        "exposed_headers": ["X-Total-Count", "X-Rate-Limit-Remaining"],
+        "max_age": 3600,
+        "credentials": true,
+        "strict_ssl": true
+      },
+      "rate_limit": {
+        "auth": {
+          "points": 100,
+          "duration": 60,
+          "block_duration": 300
+        },
+        "tasks": {
+          "points": 1000,
+          "duration": 60,
+          "block_duration": 600
+        },
+        "projects": {
+          "points": 500,
+          "duration": 60,
+          "block_duration": 600
+        }
+      }
+    }
+
+  # Authentication Service Configuration
+  AUTH_SERVICE_CONFIG: |
+    {
+      "password_policy": {
+        "min_length": 12,
+        "require_uppercase": true,
+        "require_lowercase": true,
+        "require_numbers": true,
+        "require_special": true,
+        "prevent_reuse": 5,
+        "max_age_days": 90
+      },
+      "session": {
+        "duration": 3600,
+        "refresh_token_duration": 604800,
+        "max_concurrent": 5,
+        "idle_timeout": 1800,
+        "absolute_timeout": 28800
+      },
+      "mfa": {
+        "enabled": true,
+        "methods": ["TOTP", "SMS", "EMAIL"],
+        "totp_digits": 6,
+        "totp_window": 1,
+        "backup_codes": 10
+      }
+    }
+
+  # Logging Configuration
+  LOGGING_CONFIG: |
+    {
+      "format": "json",
+      "timestamp": true,
+      "include_trace_id": true,
+      "mask_sensitive_data": true,
+      "retention_days": 90,
+      "compression": true,
+      "levels": {
+        "production": "info",
+        "staging": "debug",
+        "development": "debug"
+      }
+    }
+
+  # Metrics Configuration
+  METRICS_CONFIG: |
+    {
+      "enabled": true,
+      "interval": 15,
+      "retention_days": 30,
+      "alert_thresholds": {
+        "cpu_usage": 80,
+        "memory_usage": 85,
+        "error_rate": 5,
+        "response_time": 2000
+      }
+    }
+
+  # Tracing Configuration
+  TRACING_CONFIG: |
+    {
+      "enabled": true,
+      "sampling_rate": 0.1,
+      "export_batch_size": 512,
+      "export_interval": 5000
+    }
+
+  # Environment-specific Settings
+  ENVIRONMENT_CONFIG: |
+    {
+      "development": {
+        "log_level": "debug",
+        "enable_swagger": true,
+        "enable_debug_endpoints": true
+      },
+      "staging": {
+        "log_level": "info",
+        "enable_swagger": true,
+        "enable_debug_endpoints": false
+      },
+      "production": {
+        "log_level": "warn",
+        "enable_swagger": false,
+        "enable_debug_endpoints": false
+      }
+    }
+
+  # Service Endpoints
+  SERVICE_ENDPOINTS: |
+    {
+      "api_gateway": "http://api-gateway-service:3000",
+      "auth_service": "http://auth-service:3001",
+      "task_service": "http://task-service:3002",
+      "project_service": "http://project-service:3003",
+      "notification_service": "http://notification-service:3004"
+    }
+
+  # Common Environment Variables
+  NODE_ENV: "${NODE_ENV}"
+  LOG_LEVEL: "${LOG_LEVEL}"
+  API_PORT: "3000"
+  METRICS_PORT: "9090"
+  TRACING_ENABLED: "true"

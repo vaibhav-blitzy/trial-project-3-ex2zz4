@@ -1,0 +1,39 @@
+{
+  "watch": [
+    "src/**/*.ts",
+    "services/**/*.ts",
+    "src/**/*.json",
+    "services/**/*.json"
+  ],
+  "ignore": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/.git/**",
+    "**/logs/**"
+  ],
+  "ext": "ts,json",
+  "exec": "ts-node",
+  "delay": "2500ms",
+  "verbose": true,
+  "legacyWatch": false,
+  "restartable": "rs",
+  "colours": true,
+  "env": {
+    "NODE_ENV": "development",
+    "TS_NODE_PROJECT": "./tsconfig.json",
+    "DEBUG": "app:*"
+  },
+  "events": {
+    "start": "echo 'Starting Task Management System development server...'",
+    "restart": "echo 'Restarting due to changes...'",
+    "crash": "echo 'Application crashed - waiting for file changes before restarting...'"
+  },
+  "signal": "SIGTERM",
+  "stdout": true,
+  "stdin": false,
+  "quiet": false,
+  "runOnChangeOnly": false
+}

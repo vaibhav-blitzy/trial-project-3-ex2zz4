@@ -1,0 +1,34 @@
+* @project-leads
+
+# Backend service ownership
+src/backend/**/* @backend-team @security-team
+
+# Frontend application ownership
+src/web/**/* @frontend-team @accessibility-team
+
+# Authentication service with enhanced security
+src/backend/services/auth-service/**/* @security-team @backend-team @compliance-team
+
+# Infrastructure and deployment
+infrastructure/**/* @devops-team @security-team @cloud-architecture-team
+
+# CI/CD workflows
+.github/workflows/* @devops-team @security-team
+
+# Database migrations
+src/backend/db/migrations/* @database-team @backend-team @security-team
+
+# Security configurations
+infrastructure/security/* @security-team @compliance-team
+
+# Shared backend utilities
+src/backend/shared/**/* @backend-team @architecture-team @security-team
+
+# UI components
+src/web/src/components/**/* @frontend-team @ui-team @accessibility-team
+
+# Task service
+src/backend/services/task-service/**/* @backend-team @performance-team
+
+# Project service
+src/backend/services/project-service/**/* @backend-team @data-team

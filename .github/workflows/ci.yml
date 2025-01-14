@@ -1,0 +1,133 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  backend-ci:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+          cache-dependency-path: src/backend/package-lock.json
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            src/backend/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-backend-${{ hashFiles('src/backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-backend-
+
+      - name: Install dependencies
+        working-directory: src/backend
+        run: npm ci
+
+      - name: Run linting
+        working-directory: src/backend
+        run: npm run lint
+        env:
+          CI: true
+
+      - name: Run type checking
+        working-directory: src/backend
+        run: npm run type-check
+        env:
+          CI: true
+
+      - name: Run tests with coverage
+        working-directory: src/backend
+        run: npm run test:coverage
+        env:
+          CI: true
+          NODE_ENV: test
+
+      - name: Build backend
+        working-directory: src/backend
+        run: npm run build
+        env:
+          CI: true
+          NODE_ENV: production
+
+  frontend-ci:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+          cache-dependency-path: src/web/package-lock.json
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            src/web/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-frontend-${{ hashFiles('src/web/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-frontend-
+
+      - name: Install dependencies
+        working-directory: src/web
+        run: npm ci
+
+      - name: Run linting
+        working-directory: src/web
+        run: npm run lint
+        env:
+          CI: true
+
+      - name: Run type checking
+        working-directory: src/web
+        run: npm run type-check
+        env:
+          CI: true
+
+      - name: Run tests with coverage
+        working-directory: src/web
+        run: npm run test:coverage
+        env:
+          CI: true
+          NODE_ENV: test
+
+      - name: Build frontend
+        working-directory: src/web
+        run: npm run build
+        env:
+          CI: true
+          NODE_ENV: production
+
+      - name: Run security audit
+        working-directory: src/web
+        run: npm run security-audit
+        continue-on-error: true
+        env:
+          CI: true

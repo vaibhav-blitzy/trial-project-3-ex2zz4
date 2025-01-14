@@ -1,0 +1,171 @@
+# Prometheus Configuration v2.x
+# This configuration file defines the monitoring and alerting setup for the Task Management System
+
+global:
+  scrape_interval: 15s     # Default scrape interval for all jobs
+  evaluation_interval: 15s  # Default evaluation interval for rules
+  scrape_timeout: 10s      # Timeout for scrape requests
+  external_labels:
+    environment: '${ENV}'  # Environment label for federation and remote storage
+    region: '${REGION}'    # Region identifier for multi-region setup
+
+# Rule files containing recording and alerting rules
+rule_files:
+  - "rules/*.yml"         # Directory containing all alert rules
+  - "recording/*.yml"     # Directory containing recording rules
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - "alertmanager:9093"
+      scheme: http
+      timeout: 10s
+      api_version: v2
+
+# Scrape configurations containing jobs to monitor
+scrape_configs:
+  # Kubernetes pod discovery
+  - job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: ['default', 'monitoring']
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_container_port_name]
+        action: keep
+        regex: metrics
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: app
+
+  # API Gateway metrics
+  - job_name: 'api-gateway'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['api-gateway:8080']
+        labels:
+          service: 'api-gateway'
+          environment: '${ENV}'
+          team: 'backend'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'http_(.*)'
+        target_label: metric_type
+        replacement: 'http'
+
+  # Task Service metrics
+  - job_name: 'task-service'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['task-service:8081']
+        labels:
+          service: 'task-service'
+          environment: '${ENV}'
+          team: 'backend'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'task_(.*)'
+        target_label: metric_type
+        replacement: 'task'
+
+  # Node Exporter metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'infrastructure'
+          team: 'platform'
+
+  # Redis metrics
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: 'cache'
+          team: 'platform'
+
+  # PostgreSQL metrics
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          service: 'database'
+          team: 'platform'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'monitoring'
+          team: 'platform'
+
+# Recording rules for precomputing expensive queries
+recording_rules:
+  groups:
+    - name: http_metrics
+      interval: 1m
+      rules:
+        - record: job:http_requests_total:rate5m
+          expr: rate(http_requests_total[5m])
+        - record: job:http_request_duration_seconds:p95
+          expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+
+# Alert rules for critical conditions
+alert_rules:
+  groups:
+    - name: service_alerts
+      rules:
+        - alert: HighErrorRate
+          expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+          for: 5m
+          labels:
+            severity: critical
+            team: backend
+          annotations:
+            summary: High error rate detected
+            description: Error rate is above 10% for 5 minutes
+            runbook_url: docs/runbooks/high-error-rate.md
+
+        - alert: SlowResponseTime
+          expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+          for: 5m
+          labels:
+            severity: warning
+            team: backend
+          annotations:
+            summary: Slow response times detected
+            description: 95th percentile of response times is above 2 seconds
+            runbook_url: docs/runbooks/slow-response-time.md
+
+        - alert: HighMemoryUsage
+          expr: memory_usage_bytes / memory_total_bytes * 100 > 85
+          for: 10m
+          labels:
+            severity: warning
+            team: platform
+          annotations:
+            summary: High memory usage detected
+            description: Memory usage is above 85% for 10 minutes
+            runbook_url: docs/runbooks/high-memory-usage.md
+
+        - alert: HighCPUUsage
+          expr: cpu_usage_percent > 80
+          for: 10m
+          labels:
+            severity: warning
+            team: platform
+          annotations:
+            summary: High CPU usage detected
+            description: CPU usage is above 80% for 10 minutes
+            runbook_url: docs/runbooks/high-cpu-usage.md

@@ -1,0 +1,151 @@
+/* ==========================================================================
+   Task Management System - Typography Styles
+   Following Material Design 3.0 principles with WCAG 2.1 Level AA compliance
+   Version: 1.0.0
+   ========================================================================== */
+
+@import './variables.css';
+
+/* Base Typography Settings
+   ========================================================================== */
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-base);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+}
+
+/* Heading Styles - Fluid Typography with clamp()
+   ========================================================================== */
+.heading-1 {
+  font-size: clamp(2.5rem, 2.25rem + 1.25vw, 3.75rem);
+  line-height: clamp(1.1, 1.1 + 0.1vw, 1.2);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: clamp(1.25rem, 1.25rem + 0.25vw, 1.5rem);
+  letter-spacing: -0.02em;
+}
+
+.heading-2 {
+  font-size: clamp(2rem, 1.75rem + 1vw, 3rem);
+  line-height: clamp(1.2, 1.2 + 0.05vw, 1.25);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: clamp(1rem, 1rem + 0.25vw, 1.25rem);
+  letter-spacing: -0.01em;
+}
+
+.heading-3 {
+  font-size: clamp(1.75rem, 1.5rem + 0.75vw, 2.5rem);
+  line-height: clamp(1.25, 1.25 + 0.05vw, 1.3);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.heading-4 {
+  font-size: clamp(1.5rem, 1.25rem + 0.5vw, 2rem);
+  line-height: clamp(1.3, 1.3 + 0.05vw, 1.35);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: 0.75rem;
+}
+
+/* Body Text Styles
+   ========================================================================== */
+.body-large {
+  font-size: clamp(1.125rem, 1rem + 0.125vw, 1.25rem);
+  line-height: 1.6;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: 0.01em;
+}
+
+.body-default {
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: var(--font-weight-regular);
+}
+
+.body-small {
+  font-size: clamp(0.875rem, 0.875rem, 0.875rem);
+  line-height: 1.4;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: 0.01em;
+}
+
+.caption {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: 0.02em;
+}
+
+/* Text Utility Classes
+   ========================================================================== */
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.text-break {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Internationalization Support
+   ========================================================================== */
+.text-rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Accessibility Enhancements
+   ========================================================================== */
+@media screen and (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  * {
+    forced-color-adjust: auto;
+  }
+}
+
+/* High Contrast Mode Adjustments
+   ========================================================================== */
+@media screen and (-ms-high-contrast: active) {
+  .heading-1,
+  .heading-2,
+  .heading-3,
+  .heading-4 {
+    forced-color-adjust: none;
+    color: WindowText;
+  }
+}
+
+/* Print Styles
+   ========================================================================== */
+@media print {
+  body {
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+
+  .heading-1 { font-size: 24pt; }
+  .heading-2 { font-size: 20pt; }
+  .heading-3 { font-size: 18pt; }
+  .heading-4 { font-size: 16pt; }
+  
+  .body-large,
+  .body-default,
+  .body-small,
+  .caption {
+    font-size: 12pt;
+  }
+}

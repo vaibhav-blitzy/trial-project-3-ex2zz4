@@ -1,0 +1,96 @@
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+metadata:
+  name: encryption-config
+  namespace: task-management
+  labels:
+    app.kubernetes.io/name: encryption-config
+    app.kubernetes.io/component: security
+    security.compliance/level: high
+  annotations:
+    encryption.config/version: "1.0"
+    encryption.config/last-rotation: "${LAST_ROTATION_TIMESTAMP}"
+    encryption.config/compliance: "SOC2,PCI-DSS,HIPAA,GDPR"
+
+resources:
+  - resources: 
+    # Critical system resources that require encryption
+    - "secrets"
+    - "configmaps"
+    - "oauth2clients"
+    - "tokenaccessreviews"
+    - "serviceaccounts"
+    - "persistentvolumeclaims"
+    
+    providers:
+    # Primary encryption using AWS KMS
+    - kms:
+        name: aws-kms
+        endpoint: "unix:///var/run/kmsplugin/socket.sock"
+        cachesize: 1000
+        timeout: "3s"
+        region: "${AWS_REGION}"
+        keyARN: "${KMS_KEY_ARN}"
+        # Enable automatic key rotation
+        keyRotationPeriod: "168h" # 7 days
+        
+    # Secondary encryption using AES-CBC
+    - aescbc:
+        keys:
+        - name: key1
+          secret: "${KMS_DATA_KEY}"
+        - name: key2 # Backup key for rotation
+          secret: "${KMS_BACKUP_KEY}"
+        
+    # Fallback encryption using secretbox
+    - secretbox:
+        keys:
+        - name: fallback-key
+          secret: "${SECRETBOX_KEY}"
+    
+    # Identity provider as last resort
+    - identity: {}
+
+  # Additional resource group for extra sensitive data
+  - resources:
+    - "oauth2clients.oauth.openshift.io"
+    - "encryptionkeys.config.openshift.io"
+    providers:
+    - kms:
+        name: aws-kms-sensitive
+        endpoint: "unix:///var/run/kmsplugin/socket-sensitive.sock"
+        cachesize: 500
+        timeout: "5s"
+        region: "${AWS_REGION}"
+        keyARN: "${KMS_SENSITIVE_KEY_ARN}"
+    - aescbc:
+        keys:
+        - name: sensitive-key1
+          secret: "${KMS_SENSITIVE_KEY}"
+
+# Security context for encryption processes
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+# Network policy reference
+networkPolicy:
+  matchLabels:
+    app.kubernetes.io/name: encryption-config
+  policyRef:
+    name: allow-kms-traffic
+    namespace: task-management
+
+# Audit configuration
+audit:
+  enabled: true
+  logLevel: RequestResponse
+  maxAge: "30d"
+  maxBackup: 10
+  maxSize: "100M"

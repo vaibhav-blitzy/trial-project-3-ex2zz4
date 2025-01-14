@@ -1,0 +1,136 @@
+# Kibana Server Configuration
+# Version: @elastic/kibana@7.17.0
+server:
+  name: task-management-kibana
+  host: "0.0.0.0"
+  port: 5601
+  maxPayloadBytes: 1048576
+  ssl:
+    enabled: true
+    certificate: "/etc/kibana/certs/kibana.crt"
+    key: "/etc/kibana/certs/kibana.key"
+  publicBaseUrl: ${KIBANA_PUBLIC_URL}
+  compression:
+    enabled: true
+
+# Elasticsearch Connection Settings
+elasticsearch:
+  hosts: ["${ELASTICSEARCH_URL:http://elasticsearch:9200}"]
+  username: "${ELASTICSEARCH_USERNAME}"
+  password: "${ELASTICSEARCH_PASSWORD}"
+  ssl:
+    certificateAuthorities: ["/etc/kibana/certs/ca.crt"]
+    verificationMode: "certificate"
+  requestTimeout: 30000
+  shardTimeout: 30000
+
+# Container and Infrastructure Monitoring
+monitoring:
+  ui:
+    container:
+      elasticsearch:
+        enabled: true
+      logstash:
+        enabled: true
+      kibana:
+        enabled: true
+
+xpack:
+  monitoring:
+    enabled: true
+    collection:
+      enabled: true
+    min_interval_seconds: 10
+    elasticsearch:
+      collection:
+        enabled: true
+
+  # Security Configuration
+  security:
+    enabled: true
+    encryptionKey: "${SECURITY_ENCRYPTION_KEY}"
+    session:
+      idleTimeout: "1h"
+      lifespan: "24h"
+    audit:
+      enabled: true
+      logLevel: "info"
+    authc:
+      providers: ["basic", "token"]
+      api_key:
+        enabled: true
+
+  # Enterprise Features
+  reporting:
+    enabled: true
+    capture:
+      timeouts:
+        waitForElements: 30000
+  
+  spaces:
+    enabled: true
+  
+  apm:
+    enabled: true
+    serviceMapEnabled: true
+  
+  infra:
+    enabled: true
+  
+  fleet:
+    enabled: true
+  
+  grokdebugger:
+    enabled: true
+
+# Telemetry Settings
+telemetry:
+  enabled: false
+
+# Path Configuration
+path:
+  data: /var/lib/kibana
+  logs: /var/log/kibana
+
+# Logging Configuration
+logging:
+  appenders:
+    file:
+      type: file
+      fileName: /var/log/kibana/kibana.log
+      layout:
+        type: json
+  root:
+    appenders: ["file"]
+    level: "info"
+
+# i18n Settings
+i18n:
+  locale: "en"
+
+# Cache Settings
+cache:
+  maxAge: 3600000
+
+# Status Page Settings
+status:
+  allowAnonymous: false
+  v6ApiFormat: true
+
+# SavedObjects Configuration
+savedObjects:
+  maxImportPayloadBytes: 26214400
+  maxImportExportSize: 10000
+
+# Browser Security Settings
+csp:
+  strict: true
+  warnLegacyBrowsers: true
+
+# Map Settings
+map:
+  includeElasticMapsService: false
+
+# Accessibility Settings
+accessibility:
+  disableAnimations: false

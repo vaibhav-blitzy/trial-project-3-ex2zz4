@@ -1,0 +1,46 @@
+# Istio Gateway Configuration v1.18+
+# Purpose: Define entry point for external traffic with TLS termination and protocol support
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: task-management-gateway
+  namespace: task-management
+  labels:
+    app: task-management
+    component: gateway
+    version: v1
+spec:
+  # Select Istio ingress gateway pods
+  selector:
+    istio: ingressgateway
+  # Server configurations for HTTPS and HTTP traffic
+  servers:
+    # HTTPS Server Configuration
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      hosts:
+        - task-management.example.com
+      tls:
+        # Enable TLS termination
+        mode: SIMPLE
+        # Reference to Kubernetes secret containing TLS certificate
+        credentialName: tls-secret
+        # Enforce TLS 1.3 as per security requirements
+        minProtocolVersion: TLSV1_3
+        # Strong cipher suites for 256-bit encryption
+        cipherSuites:
+          - ECDHE-ECDSA-AES256-GCM-SHA384
+          - ECDHE-RSA-AES256-GCM-SHA384
+
+    # HTTP Server Configuration (with HTTPS redirect)
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - task-management.example.com
+      tls:
+        # Force redirect all HTTP traffic to HTTPS
+        httpsRedirect: true

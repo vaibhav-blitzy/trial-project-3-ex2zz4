@@ -1,0 +1,87 @@
+# Grafana Datasources Configuration v1
+# External Dependencies:
+# - prometheus v2.x
+# - elasticsearch v8.x
+
+apiVersion: 1
+
+datasources:
+  # Prometheus Datasource Configuration
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus-server:9090
+    isDefault: true
+    version: 1
+    editable: true
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "30s"
+      httpMethod: "POST"
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: jaeger
+      # Enhanced prometheus-specific settings
+      prometheusType: Prometheus
+      prometheusVersion: 2.x
+      incrementalQuerying: true
+      customQueryParameters: ""
+      httpHeaderName1: "X-Scope-OrgID"
+      cacheLevel: "High"
+      disableMetricsLookup: false
+      alertmanagerUid: alertmanager
+    secureJsonData:
+      httpHeaderValue1: "${PROM_ORG_ID}"
+
+  # Elasticsearch Datasource Configuration
+  - name: Elasticsearch
+    type: elasticsearch
+    access: proxy
+    url: http://elasticsearch:9200
+    database: "task-management-*"
+    version: 1
+    editable: true
+    jsonData:
+      timeField: "@timestamp"
+      esVersion: "8.0.0"
+      maxConcurrentShardRequests: 5
+      logMessageField: "message"
+      logLevelField: "level"
+      interval: "Daily"
+      timeInterval: "1m"
+      # Enhanced elasticsearch-specific settings
+      index: "task-management-*"
+      pattern: "Daily"
+      metricAlias: "metrics-*"
+      logAlias: "logs-*"
+      dataLinks: []
+      includeFrozen: false
+      xpack: true
+      fieldMultiField: true
+      manageAlerts: true
+      alertMaxEvaluationTime: "30s"
+      # Field mappings for structured logging
+      fields:
+        - name: "timestamp"
+          type: "date"
+        - name: "level"
+          type: "keyword"
+        - name: "service"
+          type: "keyword"
+        - name: "trace_id"
+          type: "keyword"
+        - name: "span_id"
+          type: "keyword"
+    secureJsonData:
+      esUsername: "${ES_USERNAME}"
+      esPassword: "${ES_PASSWORD}"
+
+  # Additional settings for both datasources
+  defaultDatasourceSettings:
+    timeout: 30
+    timeInterval: "1m"
+    queryTimeout: "30s"
+    maxDataPoints: 10000
+    tlsAuth: false
+    tlsAuthWithCACert: false
+    tlsSkipVerify: false

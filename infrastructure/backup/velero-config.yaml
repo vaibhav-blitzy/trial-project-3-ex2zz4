@@ -1,0 +1,193 @@
+---
+# Velero Namespace Definition
+# Version: v1
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: velero
+  labels:
+    app.kubernetes.io/name: velero
+    app.kubernetes.io/part-of: task-management-system
+    app.kubernetes.io/version: "2.32.0"
+    environment: production
+
+---
+# Velero ServiceAccount with AWS IAM Role
+# Version: v1
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: velero
+  namespace: velero
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::${AWS_ACCOUNT_ID}:role/velero-backup-role
+  labels:
+    app.kubernetes.io/name: velero
+    app.kubernetes.io/part-of: task-management-system
+
+---
+# Velero ClusterRoleBinding for Admin Access
+# Version: v1
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: velero-server
+  labels:
+    app.kubernetes.io/name: velero
+    app.kubernetes.io/part-of: task-management-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: velero
+    namespace: velero
+
+---
+# Velero Main Configuration
+# Version: v1
+apiVersion: velero.io/v1
+kind: Velero
+metadata:
+  name: velero
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: velero
+    app.kubernetes.io/part-of: task-management-system
+spec:
+  # Provider Configuration
+  provider: aws
+  features: EnableCSI,EnableAPIGroupVersions
+  defaultVolumesToFsBackup: true
+  
+  # Main Configuration Block
+  configuration:
+    provider: aws
+    
+    # Primary Backup Location (US East)
+    backupStorageLocation:
+      name: primary-backup-location
+      provider: aws
+      default: true
+      credential:
+        name: cloud-credentials
+        key: cloud
+      config:
+        region: ${AWS_REGION}
+        s3ForcePathStyle: "true"
+        s3Url: s3.amazonaws.com
+        kmsKeyId: ${KMS_KEY_ID}
+        serverSideEncryption: aws:kms
+        resourceGroup: task-management-backups
+        
+    # Primary Snapshot Location
+    volumeSnapshotLocation:
+      name: primary-snapshot-location
+      provider: aws
+      config:
+        region: ${AWS_REGION}
+        profile: default
+        
+    # DR Region Backup Location (US West)
+    additionalBackupStorageLocations:
+      - name: dr-backup-location
+        provider: aws
+        credential:
+          name: cloud-credentials
+          key: cloud
+        config:
+          region: ${DR_REGION}
+          s3ForcePathStyle: "true"
+          s3Url: s3.amazonaws.com
+          kmsKeyId: ${DR_KMS_KEY_ID}
+          serverSideEncryption: aws:kms
+          resourceGroup: task-management-backups-dr
+          
+    # DR Region Snapshot Location
+    additionalVolumeSnapshotLocations:
+      - name: dr-snapshot-location
+        provider: aws
+        config:
+          region: ${DR_REGION}
+          profile: default
+
+  # Backup Schedule Configuration
+  schedules:
+    daily-backup:
+      schedule: "0 1 * * *"  # Daily at 1 AM UTC
+      template:
+        includedNamespaces:
+          - default
+          - task-management
+        excludedResources:
+          - nodes
+          - events
+        includeClusterResources: true
+        storageLocation: primary-backup-location
+        volumeSnapshotLocations:
+          - primary-snapshot-location
+        ttl: ${BACKUP_RETENTION_DAYS}h0m0s
+    
+    hourly-backup:
+      schedule: "0 * * * *"  # Every hour
+      template:
+        includedNamespaces:
+          - task-management
+        excludedResources:
+          - nodes
+          - events
+        includeClusterResources: false
+        storageLocation: primary-backup-location
+        ttl: 24h0m0s
+
+  # Plugin Configuration
+  initContainers:
+    - name: velero-plugin-for-aws
+      image: velero/velero-plugin-for-aws:v1.7.0
+      imagePullPolicy: IfNotPresent
+      volumeMounts:
+        - mountPath: /target
+          name: plugins
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "128Mi"
+        limits:
+          cpu: "200m"
+          memory: "256Mi"
+
+  # Resource Allocation
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1024Mi"
+
+  # Metrics Configuration
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: "30s"
+      scrapeTimeout: "10s"
+      labels:
+        release: prometheus
+
+  # Backup Repository Configuration
+  backupRepositoryTimeout: 3h0m0s
+  
+  # Security Context
+  securityContext:
+    fsGroup: 65534
+    runAsUser: 65534
+    runAsGroup: 65534
+    runAsNonRoot: true
+
+  # Pod Security Configuration
+  podSecurityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault

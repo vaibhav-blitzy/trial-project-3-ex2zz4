@@ -1,0 +1,102 @@
+---
+# Daily full system backup schedule
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-full-backup
+  namespace: velero
+  labels:
+    backup-type: full-system
+    retention: 30d
+    app.kubernetes.io/name: velero
+    app.kubernetes.io/part-of: task-management-system
+    app.kubernetes.io/managed-by: velero
+spec:
+  # Run daily at midnight UTC
+  schedule: "0 0 * * *"
+  template:
+    # Include all namespaces except system ones
+    includedNamespaces:
+      - "*"
+    excludedNamespaces:
+      - kube-system
+      - velero
+    # Backup all resource types
+    includedResources:
+      - "*"
+    excludedResources: []
+    # Include cluster-scoped resources
+    includeClusterResources: true
+    # Reference to backup storage location
+    storageLocation: primary-backup-location
+    # Reference to volume snapshot location
+    volumeSnapshotLocations:
+      - primary-snapshot-location
+    # 30 days retention (720 hours)
+    ttl: "720h"
+    # Hooks for database consistency
+    hooks:
+      resources:
+        - name: database-freeze
+          includedNamespaces:
+            - database
+          pre:
+            - exec:
+                container: postgres
+                command:
+                  - "/scripts/db-freeze.sh"
+          post:
+            - exec:
+                container: postgres
+                command:
+                  - "/scripts/db-unfreeze.sh"
+    labels:
+      backup-tier: full
+      environment: production
+---
+# Hourly database backup schedule
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: hourly-db-backup
+  namespace: velero
+  labels:
+    backup-type: database
+    retention: 7d
+    app.kubernetes.io/name: velero
+    app.kubernetes.io/part-of: task-management-system
+    app.kubernetes.io/managed-by: velero
+spec:
+  # Run at the start of every hour
+  schedule: "0 * * * *"
+  template:
+    # Only backup database namespace
+    includedNamespaces:
+      - database
+    # Include only database-related resources
+    includedResources:
+      - persistentvolumes
+      - persistentvolumeclaims
+      - secrets
+      - configmaps
+      - statefulsets
+      - services
+    # Reference to backup storage location
+    storageLocation: primary-backup-location
+    # Reference to volume snapshot location
+    volumeSnapshotLocations:
+      - primary-snapshot-location
+    # 7 days retention (168 hours)
+    ttl: "168h"
+    # Hooks for database consistency
+    hooks:
+      resources:
+        - name: db-consistency
+          pre:
+            - exec:
+                container: postgres
+                command:
+                  - "/scripts/db-checkpoint.sh"
+    labels:
+      backup-tier: database
+      environment: production

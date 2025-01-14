@@ -1,0 +1,106 @@
+# apiVersion: security.istio.io/v1beta1 (version: 1.18+)
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: task-management-authz
+  namespace: task-management
+  labels:
+    app: task-management
+    component: authorization-policy
+    version: v1
+    security-tier: service-mesh
+
+spec:
+  # Target workloads for policy enforcement
+  selector:
+    matchLabels:
+      app: task-management
+      security-tier: service-mesh
+
+  # Default allow action for matched rules
+  action: ALLOW
+
+  # Authorization rules
+  rules:
+    # API Gateway access rules for authenticated users
+    - from:
+        - source:
+            # Restrict to API Gateway service account
+            principals: ["cluster.local/ns/task-management/sa/api-gateway"]
+            # Namespace isolation
+            namespaces: ["task-management"]
+      to:
+        - operation:
+            # Allow standard HTTP methods
+            methods: ["GET", "POST", "PUT", "DELETE"]
+            # API endpoint paths
+            paths: ["/api/v1/*"]
+            # Service ports
+            ports: ["8080", "8443"]
+      when:
+        # Role-based access validation
+        - key: request.auth.claims[roles]
+          values: ["admin", "project-manager", "team-member", "guest"]
+        # JWT issuer validation
+        - key: request.auth.claims[iss]
+          values: ["https://auth.task-management.com"]
+
+    # Monitoring access rules
+    - from:
+        - source:
+            # Allow access from task-management and monitoring namespaces
+            namespaces: ["task-management", "monitoring"]
+      to:
+        - operation:
+            # Read-only access to monitoring endpoints
+            methods: ["GET"]
+            # Monitoring paths
+            paths: ["/metrics", "/health", "/ready"]
+            # Prometheus metrics port
+            ports: ["9090"]
+
+    # Internal service-to-service communication rules
+    - from:
+        - source:
+            # Restrict to task-management namespace
+            namespaces: ["task-management"]
+            # Service account based authentication
+            principals: ["cluster.local/ns/task-management/sa/*"]
+      to:
+        - operation:
+            # Allow internal service communication
+            methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
+            # Internal service paths
+            paths: ["/internal/*"]
+            # Internal service ports
+            ports: ["8080"]
+      when:
+        # Ensure mTLS is enforced
+        - key: connection.sni
+          values: ["*.task-management.svc.cluster.local"]
+
+    # Backend service specific rules
+    - from:
+        - source:
+            # Allow only from API Gateway
+            principals: ["cluster.local/ns/task-management/sa/api-gateway"]
+      to:
+        - operation:
+            # Task service endpoints
+            paths: ["/tasks/*"]
+            ports: ["8080"]
+        - operation:
+            # Project service endpoints
+            paths: ["/projects/*"]
+            ports: ["8080"]
+        - operation:
+            # User service endpoints
+            paths: ["/users/*"]
+            ports: ["8080"]
+      when:
+        # Validate service mesh authentication
+        - key: source.principal
+          values: ["cluster.local/ns/task-management/sa/api-gateway"]
+        # Ensure proper protocol
+        - key: connection.mtls
+          values: ["true"]

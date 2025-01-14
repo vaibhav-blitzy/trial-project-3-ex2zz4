@@ -1,0 +1,41 @@
+# Istio Security API version: security.istio.io/v1beta1
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: task-management-auth
+  namespace: task-management
+  labels:
+    app: task-management
+    component: request-authentication
+    security-tier: authentication
+
+spec:
+  # Target workloads that require JWT authentication
+  selector:
+    matchLabels:
+      app: task-management
+      security-enabled: "true"
+
+  # JWT validation rules configuration
+  jwtRules:
+    - issuer: "https://task-management.example.com"
+      jwksUri: "https://task-management.example.com/.well-known/jwks.json"
+      audiences:
+        - "task-management-api"
+      # Forward original JWT token to the upstream service
+      forwardOriginalToken: true
+      # Extract JWT payload to a custom header for upstream services
+      outputPayloadToHeader: "x-jwt-payload"
+      
+      # JWT token extraction methods
+      fromHeaders:
+        - name: "Authorization"
+          prefix: "Bearer "
+      fromParams:
+        - "access_token"
+      jwtHeaders:
+        - "x-jwt-token"
+      
+      # Token validation settings
+      tokenTimeout: "1h"
+      clockSkew: "5m"

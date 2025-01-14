@@ -1,0 +1,192 @@
+name: Security Scan
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight UTC
+  pull_request:
+    branches: 
+      - main
+      - staging
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+jobs:
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      - name: Setup Snyk
+        uses: snyk/actions/setup@v3
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Install dependencies
+        run: |
+          cd src/backend && npm ci
+          cd ../web && npm ci
+
+      - name: Run Snyk backend scan
+        working-directory: ./src/backend
+        run: snyk test --all-projects --sarif-file-output=backend-results.sarif
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Run Snyk frontend scan
+        working-directory: ./src/web
+        run: snyk test --all-projects --sarif-file-output=frontend-results.sarif
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Upload Snyk results
+        uses: actions/upload-artifact@v3
+        with:
+          name: snyk-scan-results
+          path: |
+            src/backend/backend-results.sarif
+            src/web/frontend-results.sarif
+          retention-days: 7
+
+  code-analysis:
+    name: Static Code Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      security-events: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript, typescript
+          queries: security-extended,security-and-quality
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:javascript,typescript"
+          upload: true
+          output: sarif-results
+
+      - name: Upload CodeQL results
+        uses: actions/upload-artifact@v3
+        with:
+          name: codeql-results
+          path: sarif-results
+          retention-days: 7
+
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [dependency-scan]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build API Gateway image
+        run: docker build -t api-gateway:${{ github.sha }} ./src/backend/services/api-gateway
+
+      - name: Build service images
+        run: |
+          for service in ./src/backend/services/*/; do
+            if [ -f "$service/Dockerfile" ]; then
+              service_name=$(basename $service)
+              docker build -t $service_name:${{ github.sha }} $service
+            fi
+          done
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.11.2
+        with:
+          image-ref: 'api-gateway:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          vuln-type: 'os,library'
+
+      - name: Scan service containers
+        run: |
+          for service in ./src/backend/services/*/; do
+            if [ -f "$service/Dockerfile" ]; then
+              service_name=$(basename $service)
+              trivy image --format sarif --output trivy-$service_name.sarif $service_name:${{ github.sha }}
+            fi
+          done
+
+      - name: Upload Trivy results
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy-scan-results
+          path: |
+            trivy-results.sarif
+            trivy-*.sarif
+          retention-days: 7
+
+  security-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, code-analysis, container-scan]
+    if: always()
+    
+    steps:
+      - name: Download all scan results
+        uses: actions/download-artifact@v3
+        with:
+          path: scan-results
+
+      - name: Process scan results
+        run: |
+          echo "Security Scan Summary" > scan-summary.md
+          echo "===================" >> scan-summary.md
+          echo "" >> scan-summary.md
+          
+          # Process Snyk results
+          if [ -d "scan-results/snyk-scan-results" ]; then
+            echo "## Dependency Vulnerabilities" >> scan-summary.md
+            echo "Found in scan-results/snyk-scan-results" >> scan-summary.md
+          fi
+          
+          # Process CodeQL results
+          if [ -d "scan-results/codeql-results" ]; then
+            echo "## Code Analysis Findings" >> scan-summary.md
+            echo "Found in scan-results/codeql-results" >> scan-summary.md
+          fi
+          
+          # Process Trivy results
+          if [ -d "scan-results/trivy-scan-results" ]; then
+            echo "## Container Security Issues" >> scan-summary.md
+            echo "Found in scan-results/trivy-scan-results" >> scan-summary.md
+          fi
+
+      - name: Upload security summary
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-summary
+          path: scan-summary.md
+          retention-days: 7
+
+      - name: Check for critical vulnerabilities
+        if: github.event_name == 'pull_request'
+        run: |
+          if grep -q "CRITICAL" scan-summary.md; then
+            echo "Critical vulnerabilities found. Please review the security scan results."
+            exit 1
+          fi

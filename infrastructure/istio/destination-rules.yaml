@@ -1,0 +1,60 @@
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: api-gateway-destination
+  namespace: task-management
+  labels:
+    app: task-management
+    component: destination-rule
+    version: v1
+    part-of: task-management-system
+spec:
+  # Target service for the destination rule
+  host: api-gateway
+  
+  # Global traffic policy configuration
+  trafficPolicy:
+    # Load balancing configuration
+    loadBalancer:
+      # Default round robin load balancing
+      simple: ROUND_ROBIN
+      # Session affinity using consistent hashing
+      consistentHash:
+        httpHeaderName: x-user-id
+        minimumRingSize: 1024
+    
+    # Connection pool settings for circuit breaking
+    connectionPool:
+      # TCP connection pool settings
+      tcp:
+        maxConnections: 100
+        connectTimeout: 30ms
+        tcpKeepalive:
+          time: 7200s
+          interval: 75s
+          probes: 3
+      
+      # HTTP connection pool settings
+      http:
+        http1MaxPendingRequests: 1000
+        maxRequestsPerConnection: 10000
+        maxRetries: 3
+        idleTimeout: 30s
+        h2MaxRequests: 1000
+    
+    # Outlier detection for automatic pod ejection
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 10
+      minHealthPercent: 50
+  
+  # Service subsets for version-based routing
+  subsets:
+    - name: v1
+      labels:
+        version: v1
+      trafficPolicy:
+        loadBalancer:
+          simple: ROUND_ROBIN

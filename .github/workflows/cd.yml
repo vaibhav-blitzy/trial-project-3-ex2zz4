@@ -1,0 +1,169 @@
+name: Continuous Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+    paths:
+      - 'src/**'
+      - 'infrastructure/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+  NODE_VERSION: '18.x'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          buildkitd-flags: --debug
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push backend services
+        uses: docker/build-push-action@v4
+        with:
+          context: ./src/backend
+          file: ./src/backend/services/api-gateway/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/api-gateway:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/api-gateway:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            VERSION=${{ fromJson(readFile('./src/backend/package.json')).version }}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./src/web
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/frontend:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            VERSION=${{ fromJson(readFile('./src/web/package.json')).version }}
+
+      - name: Scan container images
+        run: |
+          trivy image ${{ env.ECR_REGISTRY }}/api-gateway:${{ github.sha }}
+          trivy image ${{ env.ECR_REGISTRY }}/frontend:${{ github.sha }}
+
+  deploy-staging:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    
+    steps:
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 -d > kubeconfig
+          export KUBECONFIG=./kubeconfig
+
+      - name: Validate deployment manifests
+        run: |
+          kubectl apply --dry-run=client -f k8s/staging/
+
+      - name: Deploy to staging
+        run: |
+          kubectl set image deployment/api-gateway api-gateway=${{ env.ECR_REGISTRY }}/api-gateway:${{ github.sha }} -n staging
+          kubectl set image deployment/frontend frontend=${{ env.ECR_REGISTRY }}/frontend:${{ github.sha }} -n staging
+
+      - name: Verify deployment health
+        run: |
+          kubectl rollout status deployment/api-gateway -n staging
+          kubectl rollout status deployment/frontend -n staging
+
+      - name: Run smoke tests
+        run: |
+          npm run test:e2e:staging
+
+      - name: Monitor deployment metrics
+        run: |
+          kubectl get --raw /apis/metrics.k8s.io/v1beta1/namespaces/staging/pods
+
+  deploy-production:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Check deployment window
+        run: |
+          if [[ "${{ vars.DEPLOYMENT_WINDOW }}" == "false" ]]; then
+            echo "Outside deployment window"
+            exit 1
+          fi
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 -d > kubeconfig
+          export KUBECONFIG=./kubeconfig
+
+      - name: Take pre-deployment backup
+        run: |
+          velero create backup production-$(date +%Y%m%d-%H%M%S)
+
+      - name: Deploy to production
+        run: |
+          kubectl set image deployment/api-gateway api-gateway=${{ env.ECR_REGISTRY }}/api-gateway:${{ github.sha }} -n production
+          kubectl set image deployment/frontend frontend=${{ env.ECR_REGISTRY }}/frontend:${{ github.sha }} -n production
+
+      - name: Verify deployment health
+        run: |
+          kubectl rollout status deployment/api-gateway -n production --timeout=10m
+          kubectl rollout status deployment/frontend -n production --timeout=10m
+
+      - name: Run integration tests
+        run: |
+          npm run test:e2e:production
+
+      - name: Monitor deployment metrics
+        run: |
+          kubectl get --raw /apis/metrics.k8s.io/v1beta1/namespaces/production/pods
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"Production deployment ${{ job.status }}: ${{ github.sha }}"}' \
+            ${{ secrets.SLACK_WEBHOOK }}

@@ -1,0 +1,186 @@
+/* ==========================================================================
+   Task Management System - Core Layout Styles
+   Following Material Design 3.0 principles with mobile-first approach
+   Version: 1.0.0
+   ========================================================================== */
+
+@import './variables.css';
+
+/* Base Layout Container
+   ========================================================================== */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  contain: layout style;
+  overflow-x: hidden;
+}
+
+/* Main Content Area
+   ========================================================================== */
+.main-content {
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: var(--breakpoint-lg);
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+  contain: content;
+}
+
+/* Sidebar Navigation
+   ========================================================================== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 240px;
+  z-index: var(--z-index-fixed);
+  transform: translateX(-100%);
+  transition: transform var(--transition-duration) var(--transition-timing);
+  will-change: transform;
+  contain: strict;
+}
+
+/* Grid System
+   ========================================================================== */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  contain: layout style;
+}
+
+@media (min-width: var(--breakpoint-sm)) {
+  .grid-container {
+    grid-template-columns: repeat(8, 1fr);
+    gap: var(--spacing-md);
+  }
+}
+
+@media (min-width: var(--breakpoint-md)) {
+  .grid-container {
+    grid-template-columns: repeat(12, 1fr);
+    gap: var(--spacing-lg);
+  }
+}
+
+/* Flex Container
+   ========================================================================== */
+.flex-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  align-items: flex-start;
+  contain: layout style;
+}
+
+.flex-container--row {
+  flex-direction: row;
+}
+
+.flex-container--column {
+  flex-direction: column;
+}
+
+.flex-container--center {
+  justify-content: center;
+  align-items: center;
+}
+
+/* Layout Sections
+   ========================================================================== */
+.layout-section {
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  background-color: var(--color-surface-primary);
+  box-shadow: var(--shadow-sm);
+  contain: content;
+}
+
+.layout-section--elevated {
+  box-shadow: var(--shadow-md);
+}
+
+.layout-section--bordered {
+  border: 1px solid var(--color-border-primary);
+}
+
+/* Responsive Utilities
+   ========================================================================== */
+@media (max-width: var(--breakpoint-sm)) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+  
+  .main-content {
+    padding: var(--spacing-md);
+  }
+}
+
+@media (min-width: var(--breakpoint-sm)) {
+  .show-on-mobile {
+    display: none !important;
+  }
+  
+  .sidebar {
+    transform: none;
+  }
+}
+
+/* F-Pattern & Z-Pattern Layout Support
+   ========================================================================== */
+.f-pattern {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-xl);
+}
+
+@media (min-width: var(--breakpoint-md)) {
+  .f-pattern {
+    grid-template-columns: 2fr 1fr;
+  }
+  
+  .f-pattern > *:nth-child(even) {
+    margin-left: auto;
+  }
+}
+
+.z-pattern {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-xl);
+}
+
+@media (min-width: var(--breakpoint-md)) {
+  .z-pattern {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .z-pattern > *:nth-child(odd) {
+    margin-right: auto;
+  }
+  
+  .z-pattern > *:nth-child(even) {
+    margin-left: auto;
+  }
+}
+
+/* Information Hierarchy Support
+   ========================================================================== */
+.hierarchy-level-1 {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--spacing-lg);
+}
+
+.hierarchy-level-2 {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+.hierarchy-level-3 {
+  font-size: var(--font-size-md);
+  margin-bottom: var(--spacing-sm);
+}
